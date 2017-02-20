@@ -31,17 +31,19 @@ public class TxMaker {
 
     /** parent engine under which modifications are stored */
     protected Engine engine;
+	private final ClassLoader cl;
 
     public TxMaker(Engine engine) {
-        this(engine,false,false);
+        this(engine,false,false, null);
     }
 
-    public TxMaker(Engine engine, boolean strictDBGet, boolean txSnapshotsEnabled) {
+    public TxMaker(Engine engine, boolean strictDBGet, boolean txSnapshotsEnabled, ClassLoader cl) {
         if(engine==null) throw new IllegalArgumentException();
         if(!engine.canSnapshot())
             throw new IllegalArgumentException("Snapshot must be enabled for TxMaker");
         if(engine.isReadOnly())
             throw new IllegalArgumentException("TxMaker can not be used with read-only Engine");
+        this.cl = cl;
         this.engine = engine;
         this.strictDBGet = strictDBGet;
         this.txSnapshotsEnabled = txSnapshotsEnabled;
@@ -51,8 +53,8 @@ public class TxMaker {
     public DB makeTx(){
         Engine snapshot = engine.snapshot();
         if(txSnapshotsEnabled)
-            snapshot = new TxEngine(snapshot,false);
-        return new DB(snapshot,strictDBGet,false);
+            snapshot = new TxEngine(snapshot,false, cl);
+        return new DB(snapshot,strictDBGet,false, cl);
     }
 
     public void close() {

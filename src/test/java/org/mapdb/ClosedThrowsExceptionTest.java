@@ -53,7 +53,7 @@ public abstract class ClosedThrowsExceptionTest {
 
     static public class storeHeap extends ClosedThrowsExceptionTest{
         @Override DB db() {
-            return new DB(new StoreHeap());
+            return new DB(new StoreHeap(null));
         }
     }
 

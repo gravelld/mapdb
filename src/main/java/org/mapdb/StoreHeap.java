@@ -50,8 +50,8 @@ public class StoreHeap extends Store implements Serializable{
     /** Maximal returned recid, incremented if there are no free recids*/
     protected final AtomicLong maxRecid = new AtomicLong(LAST_RESERVED_RECID);
 
-    public StoreHeap(){
-        super(false,false,null,false);
+    public StoreHeap(ClassLoader cl){
+        super(false,false,null,false, cl);
         for(long recid=1;recid<=LAST_RESERVED_RECID;recid++){
             records.put(recid, Fun.t2(null, (Serializer)null));
         }

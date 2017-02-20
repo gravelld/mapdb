@@ -86,7 +86,21 @@ public class SerializerBase implements Serializer<Object>{
 
     }
 
+    /**
+     * The optional classloader used by the serializer for dederialization. May be
+     * null.
+     */
+	private ClassLoader cl;
 
+
+    public SerializerBase() {
+		this(null);
+	}
+
+
+    public SerializerBase(ClassLoader loader) {
+		this.cl = loader;
+	}
 
 
     @Override
@@ -1541,7 +1555,7 @@ public class SerializerBase implements Serializer<Object>{
 
     protected  Class deserializeClass(DataInput is) throws IOException {
         //TODO override 'deserializeClass' in SerializerPojo
-        return SerializerPojo.classForName(is.readUTF());
+        return SerializerPojo.classForName(is.readUTF(), cl);
     }
 
 
@@ -2122,5 +2136,8 @@ public class SerializerBase implements Serializer<Object>{
         return -1;
     }
 
+    protected ClassLoader getClassLoader() {
+		return cl;
+	}
 
 }

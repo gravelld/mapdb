@@ -44,6 +44,8 @@ public class DB {
     /** view over named records */
     protected SortedMap<String, Object> catalog;
 
+	private final ClassLoader cl;
+
     protected static class IdentityWrapper{
 
         final Object o;
@@ -68,15 +70,16 @@ public class DB {
      * @param engine
      */
     public DB(final Engine engine){
-        this(engine,false,false);
+        this(engine,false,false, null);
     }
 
-    public DB(Engine engine, boolean strictDBGet, boolean disableLocks) {
+    public DB(Engine engine, boolean strictDBGet, boolean disableLocks, ClassLoader cl) {
         if(!(engine instanceof EngineWrapper)){
             //access to Store should be prevented after `close()` was called.
             //So for this we have to wrap raw Store into EngineWrapper
             engine = new EngineWrapper(engine);
         }
+        this.cl = cl;
         this.engine = engine;
         this.strictDBGet = strictDBGet;
         engine.getSerializerPojo().setDb(this);
@@ -346,7 +349,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getHashMap("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getHashMap("a"));
@@ -470,7 +473,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getHashSet("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getHashSet("a"));
@@ -792,7 +795,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getTreeMap("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getTreeMap("a"));
@@ -1010,7 +1013,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getTreeSet("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getTreeSet("a"));
@@ -1108,7 +1111,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getQueue("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getQueue("a"));
@@ -1158,7 +1161,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getStack("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getStack("a"));
@@ -1207,7 +1210,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getCircularQueue("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getCircularQueue("a"));
@@ -1286,7 +1289,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getAtomicLong("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicLong("a"));
@@ -1323,7 +1326,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getAtomicInteger("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicInteger("a"));
@@ -1360,7 +1363,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if (engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getAtomicBoolean("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicBoolean("a"));
@@ -1401,7 +1404,7 @@ public class DB {
         if (type == null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getAtomicString("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicString("a"));
@@ -1448,7 +1451,7 @@ public class DB {
         if(type==null){
             checkShouldCreate(name);
             if(engine.isReadOnly()){
-                Engine e = new StoreHeap();
+                Engine e = new StoreHeap(cl);
                 new DB(e).getAtomicVar("a");
                 return namedPut(name,
                         new DB(new EngineWrapper.ReadOnlyEngine(e)).getAtomicVar("a"));

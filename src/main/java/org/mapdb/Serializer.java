@@ -271,7 +271,7 @@ public interface Serializer<A> {
      * require access to `DB` itself.
      */
     @SuppressWarnings("unchecked")
-    Serializer<Object> BASIC = new SerializerBase();
+    Serializer<Object> BASIC = new SerializerBase(null);
 
 
     /**

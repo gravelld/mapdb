@@ -91,7 +91,7 @@ public class Serialization2Test extends TestFile {
         map.put(1,new AAA());
 
         db.compact();
-        System.out.println(db.getEngine().get(Engine.CLASS_INFO_RECID, SerializerPojo.serializer));
+        System.out.println(db.getEngine().get(Engine.CLASS_INFO_RECID, SerializerPojo.serializer(null)));
         db.close();
 
         db = DBMaker.newFileDB(f)

@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Time: 11:04
  */
 public class Issue373Test extends TestCase {
-    SerializerPojo p = new SerializerPojo(new CopyOnWriteArrayList<SerializerPojo.ClassInfo>());
+    SerializerPojo p = new SerializerPojo(new CopyOnWriteArrayList<SerializerPojo.ClassInfo>(), null);
 
     public static class NotSerializableClass {
     }

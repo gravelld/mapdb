@@ -16,7 +16,7 @@ public class Pump_InMemory_Import_Then_Save_To_Disk {
 
         //create inMemory store which does not use serialization,
         //and has speed comparable to `java.util` collections
-        DB inMemory = new DB(new StoreHeap());
+        DB inMemory = new DB(new StoreHeap(null));
         Map m = inMemory.getTreeMap("test");
 
         Random r = new Random();

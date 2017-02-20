@@ -55,8 +55,11 @@ public class TxEngine extends EngineWrapper {
 
     protected final int PREALLOC_RECID_SIZE = 128;
 
-    protected TxEngine(Engine engine, boolean fullTx) {
+	private final ClassLoader cl;
+
+    protected TxEngine(Engine engine, boolean fullTx, ClassLoader cl) {
         super(engine);
+        this.cl = cl;
         this.fullTx = fullTx;
         this.preallocRecids = fullTx ? new ArrayBlockingQueue<Long>(PREALLOC_RECID_SIZE) : null;
     }
@@ -618,7 +621,7 @@ public class TxEngine extends EngineWrapper {
     }
 
 
-    SerializerPojo pojo = new SerializerPojo((CopyOnWriteArrayList<SerializerPojo.ClassInfo>) TxEngine.this.getSerializerPojo().registered.clone());
+    SerializerPojo pojo = new SerializerPojo((CopyOnWriteArrayList<SerializerPojo.ClassInfo>) TxEngine.this.getSerializerPojo().registered.clone(), cl);
 
     @Override
     public SerializerPojo getSerializerPojo() {

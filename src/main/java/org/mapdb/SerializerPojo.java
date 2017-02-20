@@ -33,76 +33,88 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class SerializerPojo extends SerializerBase implements Serializable{
 
 
-    protected static final Serializer<CopyOnWriteArrayList<ClassInfo>> serializer = new Serializer<CopyOnWriteArrayList<ClassInfo>>() {
+	protected static final Serializer<CopyOnWriteArrayList<ClassInfo>> serializer(final ClassLoader cl) {
+		return new Serializer<CopyOnWriteArrayList<ClassInfo>>() {
 
-        @Override
-		public void serialize(DataOutput out, CopyOnWriteArrayList<ClassInfo> obj) throws IOException {
-            DataOutput2.packInt(out, obj.size());
-            for (ClassInfo ci : obj) {
-                out.writeUTF(ci.name);
-                out.writeBoolean(ci.isEnum);
-                out.writeBoolean(ci.useObjectStream);
-                if(ci.useObjectStream) continue; //no fields
+			@Override
+			public void serialize(DataOutput out, CopyOnWriteArrayList<ClassInfo> obj) throws IOException {
+				DataOutput2.packInt(out, obj.size());
+				for (ClassInfo ci : obj) {
+					out.writeUTF(ci.name);
+					out.writeBoolean(ci.isEnum);
+					out.writeBoolean(ci.useObjectStream);
+					if (ci.useObjectStream)
+						continue; // no fields
 
-                DataOutput2.packInt(out, ci.fields.size());
-                for (FieldInfo fi : ci.fields) {
-                    out.writeUTF(fi.name);
-                    out.writeBoolean(fi.primitive);
-                    out.writeUTF(fi.type);
-                }
-            }
-        }
+					DataOutput2.packInt(out, ci.fields.size());
+					for (FieldInfo fi : ci.fields) {
+						out.writeUTF(fi.name);
+						out.writeBoolean(fi.primitive);
+						out.writeUTF(fi.type);
+					}
+				}
+			}
 
-        @Override
-		public CopyOnWriteArrayList<ClassInfo> deserialize(DataInput in, int available) throws IOException{
-            if(available==0) return new CopyOnWriteArrayList<ClassInfo>();
+			@Override
+			public CopyOnWriteArrayList<ClassInfo> deserialize(DataInput in, int available) throws IOException {
+				if (available == 0)
+					return new CopyOnWriteArrayList<ClassInfo>();
 
-            int size = DataInput2.unpackInt(in);
-            ArrayList<ClassInfo> ret = new ArrayList<ClassInfo>(size);
+				int size = DataInput2.unpackInt(in);
+				ArrayList<ClassInfo> ret = new ArrayList<ClassInfo>(size);
 
-            for (int i = 0; i < size; i++) {
-                String className = in.readUTF();
-                boolean isEnum = in.readBoolean();
-                boolean isExternalizable = in.readBoolean();
+				for (int i = 0; i < size; i++) {
+					String className = in.readUTF();
+					boolean isEnum = in.readBoolean();
+					boolean isExternalizable = in.readBoolean();
 
-                int fieldsNum = isExternalizable? 0 : DataInput2.unpackInt(in);
-                FieldInfo[] fields = new FieldInfo[fieldsNum];
-                for (int j = 0; j < fieldsNum; j++) {
-                    fields[j] = new FieldInfo(in.readUTF(), in.readBoolean(), in.readUTF(), classForName(className));
-                }
-                ret.add(new ClassInfo(className, fields,isEnum,isExternalizable));
-            }
-            return new CopyOnWriteArrayList<ClassInfo>(ret);
-        }
+					int fieldsNum = isExternalizable ? 0 : DataInput2.unpackInt(in);
+					FieldInfo[] fields = new FieldInfo[fieldsNum];
+					for (int j = 0; j < fieldsNum; j++) {
+						fields[j] = new FieldInfo(in.readUTF(), in.readBoolean(), in.readUTF(), classForName(className, cl), cl);
+					}
+					ret.add(new ClassInfo(className, fields, isEnum, isExternalizable));
+				}
+				return new CopyOnWriteArrayList<ClassInfo>(ret);
+			}
 
-        @Override
-        public int fixedSize() {
-            return -1;
-        }
+			@Override
+			public int fixedSize() {
+				return -1;
+			}
 
-    };
+		};
+	}
+	
     private static final long serialVersionUID = 3181417366609199703L;
 
     protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(CC.FAIR_LOCKS);
 
-    protected static Class<?> classForName(String className) {
-        try {
-            final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    protected static Class<?> classForName(String className, ClassLoader cl) {
+    	try {
+	        return loadClassFallbackToThisBundle(className, cl);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+    }
+
+	private static Class<?> loadClassFallbackToThisBundle(String className, ClassLoader cl) throws ClassNotFoundException {
+		try {
+            final ClassLoader loader = cl!=null ? cl : Thread.currentThread().getContextClassLoader();
             return Class.forName(className, true,loader);
         } catch (ClassNotFoundException e) {
-        	try {
-				return Class.forName(className, true, SerializerPojo.class.getClassLoader());
-			} catch (ClassNotFoundException e1) {
-				throw new RuntimeException(e1);
-			}
+            
+    		// try with this bundle classloader - useful if DynamicImport-Package is set
+			return Class.forName(className, true, SerializerPojo.class.getClassLoader());
         }
-    }
+	}
 
 
     protected DB db;
 
 
-    public SerializerPojo(CopyOnWriteArrayList<ClassInfo> registered){
+    public SerializerPojo(CopyOnWriteArrayList<ClassInfo> registered, ClassLoader loader){
+    	super(loader);
         if(registered == null)
             registered = new CopyOnWriteArrayList<ClassInfo>();
         this.registered = registered;
@@ -110,7 +122,7 @@ public class SerializerPojo extends SerializerBase implements Serializable{
         for(int i=0;i<registered.size();i++)
         {
             ClassInfo ci = registered.get(i);
-            Class clazz = classForName(ci.name);
+            Class clazz = classForName(ci.name, getClassLoader());
             class2classId.put(clazz, i);
             classId2class.put(i, clazz);
 
@@ -193,12 +205,12 @@ public class SerializerPojo extends SerializerBase implements Serializable{
         protected final Class<?> clazz;
         protected Field field;
 
-        public FieldInfo(String name, boolean primitive, String type, Class<?> clazz) {
+        public FieldInfo(String name, boolean primitive, String type, Class<?> clazz, ClassLoader cl) {
             this.name = name;
             this.primitive = primitive;
             this.type = type;
             this.clazz = clazz;
-            this.typeClass = primitive?null:classForName(type);
+            this.typeClass = primitive?null:classForName(type, cl);
 
             //init field
 
@@ -226,8 +238,8 @@ public class SerializerPojo extends SerializerBase implements Serializable{
         }
 
 
-        public FieldInfo(ObjectStreamField sf, Class<?> clazz) {
-            this(sf.getName(), sf.isPrimitive(), sf.getType().getName(), clazz);
+        public FieldInfo(ObjectStreamField sf, Class<?> clazz, ClassLoader cl) {
+            this(sf.getName(), sf.isPrimitive(), sf.getType().getName(), clazz, cl);
         }
 
     }
@@ -250,7 +262,7 @@ public class SerializerPojo extends SerializerBase implements Serializable{
         FieldInfo[] fields = new FieldInfo[streamFields.length];
         for (int i = 0; i < fields.length; i++) {
             ObjectStreamField sf = streamFields[i];
-            fields[i] = new FieldInfo(sf, clazz);
+            fields[i] = new FieldInfo(sf, clazz, getClassLoader());
         }
 
         ClassInfo i = new ClassInfo(clazz.getName(), fields,clazz.isEnum(), advancedSer);
@@ -449,7 +461,7 @@ public class SerializerPojo extends SerializerBase implements Serializable{
                 if (fieldId == -1) {
                     //field does not exists in class definition stored in db,
                     //probably new field was added so add field descriptor
-                    fieldId = classInfo.addFieldInfo(new FieldInfo(f, clazz));
+                    fieldId = classInfo.addFieldInfo(new FieldInfo(f, clazz, getClassLoader()));
                     saveClassInfo();
                 }
                 DataOutput2.packInt(out, fieldId);
@@ -483,7 +495,7 @@ public class SerializerPojo extends SerializerBase implements Serializable{
 
             Class<?> clazz = classId2class.get(classId);
             if(clazz == null)
-                clazz = classForName(classInfo.name);
+                clazz = classForName(classInfo.name, getClassLoader());
             assertClassSerializable(clazz);
 
             Object o;
@@ -527,7 +539,7 @@ public class SerializerPojo extends SerializerBase implements Serializable{
 
     static{
         try{
-            Class clazz = classForName("sun.reflect.ReflectionFactory");
+            Class clazz = classForName("sun.reflect.ReflectionFactory", null);
             if(clazz!=null){
                 Method getReflectionFactory = clazz.getMethod("getReflectionFactory");
                 sunReflFac = getReflectionFactory.invoke(null);
@@ -651,11 +663,11 @@ public class SerializerPojo extends SerializerBase implements Serializable{
 
         @Override
         protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            Class clazz = Class.forName(desc.getName(), false, loader);
-            if (clazz != null)
-                return clazz;
-            return super.resolveClass(desc);
+            try {
+				return loadClassFallbackToThisBundle(desc.getName(), getClassLoader());
+			} catch (ClassNotFoundException e) {
+				return super.resolveClass(desc);
+			}
         }
     }
 
@@ -666,7 +678,7 @@ public class SerializerPojo extends SerializerBase implements Serializable{
     }
     public void save(Engine e){
         //TODO thread safe?
-        e.update(Engine.CLASS_INFO_RECID, registered, SerializerPojo.serializer);
+        e.update(Engine.CLASS_INFO_RECID, registered, SerializerPojo.serializer(getClassLoader()));
         oldSize = registered.size();
     }
 

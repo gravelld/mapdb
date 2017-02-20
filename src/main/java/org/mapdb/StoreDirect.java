@@ -185,8 +185,8 @@ public class StoreDirect extends Store{
 
     public StoreDirect(Volume.Factory volFac, boolean readOnly, boolean deleteFilesAfterClose,
                        int spaceReclaimMode, boolean syncOnCommitDisabled, long sizeLimit,
-                       boolean checksum, boolean compress, byte[] password, boolean disableLocks,int sizeIncrement) {
-        super(checksum, compress, password, disableLocks);
+                       boolean checksum, boolean compress, byte[] password, boolean disableLocks,int sizeIncrement, ClassLoader cl) {
+        super(checksum, compress, password, disableLocks, cl);
         this.readOnly = readOnly;
         this.deleteFilesAfterClose = deleteFilesAfterClose;
         this.syncOnCommitDisabled = syncOnCommitDisabled;
@@ -244,7 +244,7 @@ public class StoreDirect extends Store{
     }
 
     public StoreDirect(Volume.Factory volFac) {
-        this(volFac, false,false,5,false,0L, false,false,null,false,0);
+        this(volFac, false,false,5,false,0L, false,false,null,false,0, null);
     }
 
 
@@ -816,7 +816,7 @@ public class StoreDirect extends Store{
                     new File(compactedFile.getPath() + StoreDirect.DATA_FILE_EXT),
                     new File(compactedFile.getPath() + StoreWAL.TRANS_LOG_FILE_EXT),
                     asyncWriteEnabled);
-            StoreDirect store2 = new StoreDirect(fab,false,false,5,false,0L, checksum,compress,password,false,0);
+            StoreDirect store2 = new StoreDirect(fab,false,false,5,false,0L, checksum,compress,password,false,0, null);
 
             compactPreUnderLock();
 

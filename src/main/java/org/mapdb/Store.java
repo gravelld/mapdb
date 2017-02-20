@@ -60,7 +60,9 @@ public abstract class Store implements Engine{
 
     protected final ThreadLocal<CompressLZF> LZF;
 
-    protected Store(boolean checksum, boolean compress, byte[] password, boolean disableLocks) {
+	private final ClassLoader cl;
+
+    protected Store(boolean checksum, boolean compress, byte[] password, boolean disableLocks, ClassLoader loader) {
 
 
         this.checksum = checksum;
@@ -68,6 +70,7 @@ public abstract class Store implements Engine{
         this.encrypt =  password!=null;
         this.password = password;
         this.encryptionXTEA = !encrypt?null:new EncryptionXTEA(password);
+        this.cl = loader;
 
         this.LZF = !compress?null:new ThreadLocal<CompressLZF>() {
             @Override
@@ -109,8 +112,8 @@ public abstract class Store implements Engine{
             pojoLock.lock();
             try{
                 if(serializerPojo==null){
-                    final CopyOnWriteArrayList<SerializerPojo.ClassInfo> classInfos = get(Engine.CLASS_INFO_RECID, SerializerPojo.serializer);
-                    serializerPojo = new SerializerPojo(classInfos);
+                    final CopyOnWriteArrayList<SerializerPojo.ClassInfo> classInfos = get(Engine.CLASS_INFO_RECID, SerializerPojo.serializer(cl));
+                    serializerPojo = new SerializerPojo(classInfos, cl);
                     serializerPojoInitLock = null;
                 }
             }finally{

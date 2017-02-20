@@ -94,6 +94,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
     }
 
     protected Properties props = new Properties();
+	private ClassLoader cl=null;
 
     /** use static factory methods, or make subclass */
     protected DBMaker(){}
@@ -693,6 +694,11 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
     }
 
 
+    public DBMakerT classLoader(ClassLoader cl){
+    	this.cl = cl;
+        return getThis();
+    }
+
 
 
     /** constructs DB using current settings */
@@ -701,7 +707,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         Engine engine = makeEngine();
         boolean dbCreated = false;
         try{
-            DB db =  new  DB(engine, strictGet,false);
+            DB db =  new  DB(engine, strictGet,false, cl);
             dbCreated = true;
             return db;
         }finally {
@@ -719,7 +725,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
         //init catalog if needed
         DB db = new DB(e);
         db.commit();
-        return new TxMaker(e, propsGetBool(Keys.strictDBGet), propsGetBool(Keys.snapshots));
+        return new TxMaker(e, propsGetBool(Keys.strictDBGet), propsGetBool(Keys.snapshots), cl);
     }
 
     /** constructs Engine using current settings */
@@ -928,7 +934,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
 
 
     protected Engine extendSnapshotEngine(Engine engine) {
-        return new TxEngine(engine,propsGetBool(Keys.fullTx));
+        return new TxEngine(engine,propsGetBool(Keys.fullTx), cl);
     }
 
     protected Engine extendCacheLRU(Engine engine) {
@@ -982,7 +988,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
 
 
     protected Engine extendHeapStore() {
-        return new StoreHeap();
+        return new StoreHeap(cl);
     }
 
     protected Engine extendStoreAppend() {
@@ -993,7 +999,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
                 propsGetBool(Keys.deleteFilesAfterClose),
                 propsGetBool(Keys.commitFileSyncDisable),
                 propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey(),
-                false);
+                false, cl);
     }
 
     protected Engine extendStoreDirect(Volume.Factory folFac) {
@@ -1003,7 +1009,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
                 propsGetInt(Keys.freeSpaceReclaimQ,CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
                 propsGetBool(Keys.commitFileSyncDisable),propsGetLong(Keys.sizeLimit,0),
                 propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey(),
-                false,0);
+                false,0, cl);
     }
 
     protected Engine extendStoreWAL(Volume.Factory folFac) {
@@ -1012,7 +1018,7 @@ public class DBMaker<DBMakerT extends DBMaker<DBMakerT>> {
                 propsGetInt(Keys.freeSpaceReclaimQ,CC.DEFAULT_FREE_SPACE_RECLAIM_Q),
                 propsGetBool(Keys.commitFileSyncDisable),propsGetLong(Keys.sizeLimit,-1),
                 propsGetBool(Keys.checksum),compressionEnabled,propsGetXteaEncKey(),
-                false,0);
+                false,0, cl);
     }
 
 

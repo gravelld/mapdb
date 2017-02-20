@@ -489,7 +489,7 @@ public abstract class Volume {
         static{
             try{
                 unmapHackSupported =
-                        SerializerPojo.classForName("sun.nio.ch.DirectBuffer")!=null;
+                        SerializerPojo.classForName("sun.nio.ch.DirectBuffer", null)!=null;
             }catch(Exception e){
                 unmapHackSupported = false;
             }
